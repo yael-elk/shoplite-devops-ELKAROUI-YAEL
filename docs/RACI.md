@@ -4,13 +4,13 @@
 
 | Rôle | Membre(s) |
 |---|---|
-| Product Owner (PO) | À compléter |
-| Développeur API | À compléter |
-| Développeur Frontend | À compléter |
-| DevOps / Release Manager | À compléter |
-| DBA / Référent données | À compléter |
-| QA / Testeur | À compléter |
-| Incident Manager | À compléter |
+| Product Owner (PO) | ELKAROUI Yael |
+| Développeur API | ELKAROUI Yael |
+| Développeur Frontend | ELKAROUI Yael |
+| DevOps / Release Manager | ELKAROUI Yael |
+| DBA / Référent données | ELKAROUI Yael |
+| QA / Testeur | ELKAROUI Yael |
+| Incident Manager | ELKAROUI Yael |
 
 ## Matrice
 
