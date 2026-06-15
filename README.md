@@ -22,8 +22,8 @@ Mini application e-commerce industrialisée avec une chaîne DevOps complète.
 
 ```bash
 # 1. Cloner le repo
-git clone https://github.com/yael-elk/shoplite-devops-ELKAROUI-YAEL.git
-cd shoplite-devops-ELKAROUI-YAEL/shoplite
+git clone https://github.com/TON_COMPTE/TON_REPO.git
+cd TON_REPO
 
 # 2. Créer le fichier .env à partir de l'exemple
 cp .env.example .env
