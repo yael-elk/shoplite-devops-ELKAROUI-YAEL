@@ -6,7 +6,8 @@ const router = express.Router();
 router.get("/", async (req, res, next) => {
   try {
     const result = await db.query(
-      "SELECT id, name, description, price_cents FROM produits_cassees ORDER BY id"    );
+      "SELECT id, name, description, price_cents FROM products ORDER BY id"
+    );
 
     res.json({
       source: "database",
