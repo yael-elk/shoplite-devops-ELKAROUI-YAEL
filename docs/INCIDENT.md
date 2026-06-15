@@ -1,87 +1,61 @@
 # Rapport d'incident — ShopLite
 
-## Template
+## Incident contrôlé du TP
 
----
-
-**Titre :** [titre court]  
-**Date :** [date]  
-**Durée :** [HH:MM à HH:MM]  
-**Sévérité :** [P1 / P2 / P3]  
-**Statut :** [Résolu / En cours]  
-**Incident Manager :** [nom]
-
----
+**Titre :** Route `/api/products` cassée volontairement  
+**Date :** 2026-06-15  
+**Durée :** 10:00 à 10:14  
+**Sévérité :** P2  
+**Statut :** Résolu  
+**Incident Manager :** ELKAROUI Yael  
 
 ## Impact
 
-- Service(s) affecté(s) : `[ex: GET /api/products]`
-- Utilisateurs impactés : `[ex: 100% des utilisateurs frontend]`
-- Description : `[ce que l'utilisateur voyait]`
+- Service affecté : `GET /api/products`
+- Utilisateurs impactés : 100% des utilisateurs frontend (catalogue vide)
+- Description : la route products retournait une erreur 500 car la table SQL n'existait pas
 
 ## Timeline
 
 | Heure | Action | Responsable | Résultat |
 |---|---|---|---|
-| HH:MM | Détection | QA | Test rouge |
-| HH:MM | Analyse logs | DevOps | Cause identifiée |
-| HH:MM | Décision rollback | PO + IM | Validé |
-| HH:MM | Rollback exécuté | DevOps | API redémarrée |
-| HH:MM | Smoke test | QA | Tests verts |
-| HH:MM | Incident clos | Incident Manager | — |
+| 10:00 | Backup PostgreSQL avant incident | DevOps | backups/shoplite_avant_incident.sql créé |
+| 10:05 | Modification products.js (table "produits_cassees") | Dev API | Commit feature/incident-controle |
+| 10:08 | Docker rebuild + curl /api/products | QA | {"error":"Internal server error"} confirmé |
+| 10:13 | Rollback vers v1.0.0 via rollback.sh | DevOps | sh scripts/rollback.sh v1.0.0 |
+| 10:14 | Smoke tests post-rollback | QA | Health ✅ Ready ✅ Products ✅ Frontend ✅ |
+| 10:14 | Vérification données PostgreSQL | DBA | 3 produits présents, aucune perte |
+| 10:14 | Incident clos | IM | Rollback v1.0.0 terminé avec succès |
 
 ## Cause racine
 
-[Description technique de la cause]
+Modification volontaire de la requête SQL dans `api/src/routes/products.js` :  
+table `products` remplacée par `produits_cassees` qui n'existe pas en base.
 
-## Correction appliquée
-
-[Commandes ou actions réalisées]
+## Commandes utilisées
 
 ```bash
-# Exemple de commandes utilisées
+# Backup avant incident
+docker exec shoplite_db pg_dump -U shoplite -d shoplite > backups/shoplite_avant_incident.sql
+
+# Rollback
 sh scripts/rollback.sh v1.0.0
+
+# Vérification
+curl http://localhost:8080/api/products
 ```
 
-## Vérifications post-incident
+## Vérifications post-rollback
 
-- [ ] `curl /api/health` → status ok
-- [ ] `curl /api/products` → données présentes
-- [ ] Tests Jest verts
-- [ ] Données PostgreSQL intactes
+- [x] `curl /api/health` → status ok
+- [x] `curl /api/products` → 3 produits présents
+- [x] Smoke tests verts
+- [x] Données PostgreSQL intactes (pas de docker compose down -v)
 
 ## Actions préventives
 
 | Action | Responsable | Deadline |
 |---|---|---|
-| [action] | [qui] | [quand] |
-
----
-
-## Incident contrôlé du TP
-
-**Titre :** Route `/api/products` cassée volontairement  
-**Date :** 2026-06-15  
-**Durée :** ~20 minutes  
-**Sévérité :** P2  
-**Statut :** Résolu
-
-### Impact
-
-- Service affecté : `GET /api/products`
-- Frontend : catalogue produits vide
-- API health : toujours verte
-
-### Cause racine
-
-Modification volontaire dans `products.js` pour simuler un bug (ex: requête SQL invalide ou erreur 500).
-
-### Correction
-
-Rollback vers l'image Docker `v1.0.0` via `scripts/rollback.sh`.
-
-### Vérifications
-
-- [x] Tests Jest verts après rollback
-- [x] Données PostgreSQL conservées (pas de `docker compose down -v`)
-- [x] Smoke tests verts
+| Ajouter test automatisé sur /api/products en CI | QA | Immédiat |
+| Review obligatoire avant merge sur main | DevOps | Immédiat |
+| Backup automatique avant chaque déploiement | DevOps | Immédiat |
