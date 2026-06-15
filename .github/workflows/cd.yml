@@ -1,0 +1,72 @@
+name: CD
+
+on:
+  push:
+    branches: [develop]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environnement cible"
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+
+jobs:
+  deploy-staging:
+    name: Deploy staging
+    runs-on: ubuntu-latest
+    environment: staging
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag image staging
+        run: |
+          docker build -t shoplite-api:staging ./api
+          docker build -t shoplite-frontend:staging ./frontend
+      - name: Start staging stack
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --build
+      - name: Wait for services
+        run: sleep 15
+      - name: Smoke test staging
+        run: |
+          BASE_URL=http://localhost:8081 sh scripts/smoke-test.sh
+      - name: Log deployment
+        run: |
+          echo "$(date -u '+%Y-%m-%dT%H:%M:%SZ') | staging | ${{ github.sha }} | ${{ github.actor }} | OK" >> deploy.log
+      - name: Teardown
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.staging.yml down
+
+  deploy-production:
+    name: Deploy production (simulée)
+    runs-on: ubuntu-latest
+    environment: production
+    needs: []
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: Tag image production
+        run: |
+          docker build -t shoplite-api:${{ env.VERSION }} ./api
+          docker build -t shoplite-api:latest ./api
+          docker build -t shoplite-frontend:${{ env.VERSION }} ./frontend
+          docker build -t shoplite-frontend:latest ./frontend
+      - name: Start production stack
+        run: |
+          APP_VERSION=${{ env.VERSION }} docker compose up -d --build
+      - name: Wait for services
+        run: sleep 15
+      - name: Smoke test production
+        run: |
+          BASE_URL=http://localhost:8080 sh scripts/smoke-test.sh
+      - name: Log deployment
+        run: |
+          echo "$(date -u '+%Y-%m-%dT%H:%M:%SZ') | production | ${{ env.VERSION }} | ${{ github.actor }} | OK" >> deploy.log
+      - name: Teardown
+        if: always()
+        run: docker compose down
